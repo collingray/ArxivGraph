@@ -1,10 +1,3 @@
-//
-//  SidebarView.swift
-//  ArxivGraph
-//
-//  Created by Collin Gray on 6/26/24.
-//
-
 import SwiftUI
 
 struct SidebarView: View {
