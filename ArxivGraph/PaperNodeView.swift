@@ -93,7 +93,7 @@ struct PaperNodeView: View {
                 
         }
         .padding()
-        .background(Color.white)
+        .background()
         .cornerRadius(8)
         .shadow(radius: 4)
         .onTapGesture(count: 2) {

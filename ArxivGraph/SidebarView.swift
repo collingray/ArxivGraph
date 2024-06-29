@@ -19,6 +19,7 @@ struct SidebarView: View {
                     viewModel.searchText.isEmpty || paper.title.lowercased().contains(viewModel.searchText.lowercased())
                 }) { paper in
                     Text(paper.title)
+                        .padding(3)
                         .onTapGesture(count: 2) {
                             PDFUtils.fetchPaper(paper) { url in
                                 if let url = url {

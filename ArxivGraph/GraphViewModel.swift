@@ -23,29 +23,21 @@ class GraphViewModel: ObservableObject {
     init(papers: [ArxivPaper]) {
         self.papers = papers
         self.paperPositions = papers.reduce(into: [:]) { result, paper in
-            result[paper.id] = CGPoint(x: 0, y: 100)
+            result[paper.id] = CGPoint(x: 0, y: 0)
         }
     }
     
     func addPaper(identifier: String) {
         ArxivAPIClient.shared.fetchPaper(identifier: identifier)
             .receive(on: DispatchQueue.main)
-            .flatMap { paper in
-                return ArxivAPIClient.shared.fetchCitations(for: paper)
-                    .receive(on: DispatchQueue.main)
-                    .map { citations in
-                        var newPaper = paper
-                        newPaper.citations = citations
-                        return newPaper
-                    }
-            }
             .sink { completion in
                 if case .failure(let error) = completion {
                     print("Error fetching paper: \(error)")
                 }
             } receiveValue: { [weak self] paper in
-                self?.papers.append(paper)
                 self?.paperPositions[paper.id] = -(self?.canvasPosition ?? .zero)
+                self?.papers.append(paper)
+                self?.addPaperCitations(for: paper)
             }
             .store(in: &cancellables)
     }
@@ -72,9 +64,7 @@ class GraphViewModel: ObservableObject {
                 print("Got citations: \(citations)")
                 if let paperId = self?.papers.firstIndex(where: { $0.id == paper.id }) {
                     self?.papers[paperId].citations = citations
-                    
                 }
-                
             }
             .store(in: &cancellables)
     }
