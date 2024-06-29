@@ -8,12 +8,12 @@ import Foundation
 import PDFKit
 
 struct PDFUtils {
-    static let documentDir = {
+    static var documentDir: URL? {
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
     }
     
     static func fetchPaper(_ paper: ArxivPaper, completion: @escaping (URL?) -> Void) {
-        if let dir = documentDir() {
+        if let dir = documentDir {
             let localUrl = dir.appendingPathComponent(paper.title + ".pdf")
             
             print("File path: \(localUrl.path(percentEncoded: false))")

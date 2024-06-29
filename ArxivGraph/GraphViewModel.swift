@@ -45,7 +45,7 @@ class GraphViewModel: ObservableObject {
                 }
             } receiveValue: { [weak self] paper in
                 self?.papers.append(paper)
-                self?.paperPositions[paper.id] = CGPoint(x: 0, y: 200)
+                self?.paperPositions[paper.id] = -(self?.canvasPosition ?? .zero)
             }
             .store(in: &cancellables)
     }
@@ -90,7 +90,7 @@ class GraphViewModel: ObservableObject {
     }
     
     func centerOn(id: String) {
-        canvasPosition = paperPositions[id] ?? .zero
+        canvasPosition = -(paperPositions[id] ?? .zero)
     }
     
     func canvasDragging(by offset: CGSize) {
@@ -119,5 +119,9 @@ class GraphViewModel: ObservableObject {
 extension CGPoint {
     static func + (left: CGPoint, right: CGPoint) -> CGPoint {
         return CGPoint(x: left.x + right.x, y: left.y + right.y)
+    }
+    
+    static prefix func -(point: CGPoint) -> CGPoint {
+        return CGPoint(x: -point.x, y: -point.y)
     }
 }

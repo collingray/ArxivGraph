@@ -16,17 +16,17 @@ struct PaperNodeView: View {
                     showingPreview = true
                 } label: {
                     Image(systemName: "eye")
-                }
+                }.help("Preview paper")
                 
                 Button {
                     openPDF()
                 } label: {
                     Image(systemName: "square.and.arrow.up")
-                }
+                }.help("Open paper")
                 
                 Link(destination: URL(string: "http://arxiv.org/abs/\(paper.id)")!) {
                     Image(systemName: "link")
-                }
+                }.help("Open on arXiv")
                 
                 Button {
                     showingPopover = true
@@ -44,16 +44,19 @@ struct PaperNodeView: View {
                                         viewModel.addPaper(identifier: citation.id)
                                     } label: {
                                         Image(systemName: existing ? "checkmark" : "plus")
+                                            .frame(width: 15, height: 15)
                                     }
                                     .buttonStyle(BorderlessButtonStyle())
                                     .disabled(existing)
                                     
-                                    Text(citation.title)
+                                    Spacer()
+                                    Text(citation.title).multilineTextAlignment(.center)
+                                    Spacer()
                                 }
                             }
                         }.padding()
-                    }.frame(minWidth: 200, minHeight: 100, maxHeight: 250)
-                }
+                    }.frame(minWidth: 350, maxWidth: 350, minHeight: 100, maxHeight: 250)
+                }.help("Show cited papers")
                 
                 Spacer()
                 
@@ -61,7 +64,7 @@ struct PaperNodeView: View {
                     viewModel.removePaper(identifier: paper.id)
                 } label: {
                     Image(systemName: "trash")
-                }
+                }.help("Delete paper")
             }.buttonStyle(BorderlessButtonStyle())
             
             Text(paper.title)
@@ -82,6 +85,7 @@ struct PaperNodeView: View {
             
             Text(paper.authors.joined(separator: "  •  "))
                 .font(.caption2)
+                .lineLimit(5)
             
             Text(paper.abstract.replacingOccurrences(of: "\n", with: " "))
                 .font(.caption)
@@ -147,5 +151,5 @@ struct PDFViewer: NSViewRepresentable {
 }
 
 #Preview {
-    PaperNodeView(paper: PreviewData.paper1, viewModel: PreviewData.graphViewModel)
+    PaperNodeView(paper: PreviewData.paper4, viewModel: PreviewData.graphViewModel)
 }

@@ -16,9 +16,10 @@ struct ContentView: View {
     var body: some View {
         HSplitView {
             SidebarView(viewModel: viewModel)
-                .frame(minWidth: 100, maxWidth: 500, maxHeight: .infinity)
+                .frame(minWidth: 100, maxWidth: 500)
+                
             GraphView(viewModel: viewModel)
-                .frame(minWidth: 100, maxWidth: .infinity, maxHeight: .infinity)
+                .frame(minWidth: 500)
         }
     }
 }

@@ -12,14 +12,16 @@ struct GraphView: View {
     
     var body: some View {
         GeometryReader { geometry in
+            let centerOffset = CGPoint(x: 0, y: (geometry.frame(in: .local).height / 2))
+            
             ZStack {
                 ForEach(viewModel.papers) { paper in
                     let citations = paper.citations.filter { viewModel.containsPaper(identifier: $0.id) }
                     
-                    let horizontalOffset = CGPoint(x: 150, y: 0)
-                    let start = viewModel.positionOf(id: paper.id) + horizontalOffset
+                    let horizontalOffset = CGPoint(x: (geometry.frame(in: .local).width / 2) - 150, y: 0)
+                    let start = viewModel.positionOf(id: paper.id) + horizontalOffset + centerOffset
                     ForEach(citations) { cited in
-                        let end = viewModel.positionOf(id: cited.id) + horizontalOffset
+                        let end = viewModel.positionOf(id: cited.id) + horizontalOffset + centerOffset
                         
                         Line(startPoint: start, endPoint: end)
                             .stroke(Color.blue, lineWidth: 2)
@@ -28,7 +30,7 @@ struct GraphView: View {
                 
                 ForEach(viewModel.papers) { paper in
                     PaperNodeView(paper: paper, viewModel: viewModel)
-                        .position(viewModel.positionOf(id: paper.id))
+                        .position(viewModel.positionOf(id: paper.id) + centerOffset)
                         .gesture(
                             DragGesture()
                                 .onChanged({ value in
