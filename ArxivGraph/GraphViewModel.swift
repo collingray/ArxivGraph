@@ -4,7 +4,8 @@ import Combine
 
 class GraphViewModel: ObservableObject {
     @Published var papers: [ArxivPaper] = []
-    @Published var paperPositions: [String: CGPoint] = [:]
+    @Published var images: [NSImage] = []
+    @Published var objectPositions: [String: CGPoint] = [:]
     @Published var canvasPosition: CGPoint = .zero
     
     @Published var searchText: String = ""
@@ -12,7 +13,7 @@ class GraphViewModel: ObservableObject {
     private var cancellables: Set<AnyCancellable> = []
     
     var draggingCanvas: Bool = false
-    var draggingPaperId: String? = nil
+    var draggingObjectId: String? = nil
     
     @Published var dragOffset: CGPoint = .zero
     
@@ -22,7 +23,7 @@ class GraphViewModel: ObservableObject {
     
     init(papers: [ArxivPaper]) {
         self.papers = papers
-        self.paperPositions = papers.reduce(into: [:]) { result, paper in
+        self.objectPositions = papers.reduce(into: [:]) { result, paper in
             result[paper.id] = CGPoint(x: 0, y: 0)
         }
     }
@@ -35,7 +36,7 @@ class GraphViewModel: ObservableObject {
                     print("Error fetching paper: \(error)")
                 }
             } receiveValue: { [weak self] paper in
-                self?.paperPositions[paper.id] = -(self?.canvasPosition ?? .zero)
+                self?.objectPositions[paper.id] = -(self?.canvasPosition ?? .zero)
                 self?.papers.append(paper)
                 self?.addPaperCitations(for: paper)
             }
@@ -45,7 +46,7 @@ class GraphViewModel: ObservableObject {
     func removePaper(identifier: String) {
         if let i = papers.firstIndex(where: { $0.id == identifier }) {
             papers.remove(at: i)
-            paperPositions.removeValue(forKey: identifier)
+            objectPositions.removeValue(forKey: identifier)
         }
     }
     
@@ -69,10 +70,25 @@ class GraphViewModel: ObservableObject {
             .store(in: &cancellables)
     }
     
+    func loadImage(from providers: [NSItemProvider], at: CGPoint) -> Bool {
+        if let item = providers.first {
+            item.loadObject(ofClass: NSImage.self) { image, error in
+                if let image = image as? NSImage {
+                    DispatchQueue.main.async {
+                        self.images.append(image)
+                        self.objectPositions[String(image.hashValue)] = at
+                    }
+                }
+            }
+            return true
+        }
+        return false
+    }
+    
     func positionOf(id: String) -> CGPoint {
-        let position = (paperPositions[id] ?? .zero) + canvasPosition
+        let position = (objectPositions[id] ?? .zero) + canvasPosition
         
-        if draggingCanvas || draggingPaperId == id {
+        if draggingCanvas || draggingObjectId == id {
             return position + dragOffset
         } else {
             return position
@@ -80,10 +96,10 @@ class GraphViewModel: ObservableObject {
     }
     
     func centerOn(id: String) {
-        canvasPosition = -(paperPositions[id] ?? .zero)
+        canvasPosition = -(objectPositions[id] ?? .zero)
     }
     
-    func canvasDragging(by offset: CGSize) {
+    func draggingCanvas(by offset: CGSize) {
         dragOffset = CGPoint(x: offset.width, y: offset.height)
         draggingCanvas = true
     }
@@ -94,15 +110,15 @@ class GraphViewModel: ObservableObject {
         draggingCanvas = false
     }
     
-    func paperDragging(_ paperId: String, by offset: CGSize) {
+    func draggingObject(_ id: String, by offset: CGSize) {
         dragOffset = CGPoint(x: offset.width, y: offset.height)
-        draggingPaperId = paperId
+        draggingObjectId = id
     }
     
-    func paperDraggingEnded(_ paperId: String) {
-        paperPositions[paperId] = (paperPositions[paperId] ?? .zero) + dragOffset
+    func objectDraggingEnded(_ id: String) {
+        objectPositions[id] = (objectPositions[id] ?? .zero) + dragOffset
         dragOffset = .zero
-        draggingPaperId = nil
+        draggingObjectId = nil
     }
 }
 
