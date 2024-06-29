@@ -5,8 +5,16 @@ import Combine
 class GraphViewModel: ObservableObject {
     @Published var papers: [ArxivPaper] = []
     @Published var paperPositions: [String: CGPoint] = [:]
+    @Published var canvasPosition: CGPoint = .zero
+    
     @Published var searchText: String = ""
+    
     private var cancellables: Set<AnyCancellable> = []
+    
+    var draggingCanvas: Bool = false
+    var draggingPaperId: String? = nil
+    
+    @Published var dragOffset: CGPoint = .zero
     
     init() {
         
@@ -71,11 +79,45 @@ class GraphViewModel: ObservableObject {
             .store(in: &cancellables)
     }
     
-    func updatePosition(for paperId: String, to newPosition: CGPoint) {
-        paperPositions[paperId] = newPosition
+    func positionOf(id: String) -> CGPoint {
+        let position = (paperPositions[id] ?? .zero) + canvasPosition
+        
+        if draggingCanvas || draggingPaperId == id {
+            return position + dragOffset
+        } else {
+            return position
+        }
     }
     
-    func updatePosition(for paperId: String, by offset: CGSize) {
-        paperPositions[paperId] = (paperPositions[paperId] ?? .zero).applying(.init(translationX: offset.width, y: offset.height))
+    func centerOn(id: String) {
+        canvasPosition = paperPositions[id] ?? .zero
+    }
+    
+    func canvasDragging(by offset: CGSize) {
+        dragOffset = CGPoint(x: offset.width, y: offset.height)
+        draggingCanvas = true
+    }
+    
+    func canvasDraggingEnded() {
+        canvasPosition = canvasPosition + dragOffset
+        dragOffset = .zero
+        draggingCanvas = false
+    }
+    
+    func paperDragging(_ paperId: String, by offset: CGSize) {
+        dragOffset = CGPoint(x: offset.width, y: offset.height)
+        draggingPaperId = paperId
+    }
+    
+    func paperDraggingEnded(_ paperId: String) {
+        paperPositions[paperId] = (paperPositions[paperId] ?? .zero) + dragOffset
+        dragOffset = .zero
+        draggingPaperId = nil
+    }
+}
+
+extension CGPoint {
+    static func + (left: CGPoint, right: CGPoint) -> CGPoint {
+        return CGPoint(x: left.x + right.x, y: left.y + right.y)
     }
 }
