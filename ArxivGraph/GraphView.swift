@@ -28,6 +28,10 @@ struct GraphView: View {
                             DragGesture()
                                 .onChanged({ value in
                                     viewModel.draggingObject(paper.id, by: value.translation )
+                                    
+                                    if let i = viewModel.papers.firstIndex(where: { $0.id == paper.id }), i != viewModel.images.count - 1 {
+                                        viewModel.papers.append(viewModel.papers.remove(at: i))
+                                    }
                                 })
                                 .onEnded({ _ in viewModel.objectDraggingEnded(paper.id) })
                         )
@@ -43,9 +47,20 @@ struct GraphView: View {
                             DragGesture()
                                 .onChanged({ value in
                                     viewModel.draggingObject(imageId, by: value.translation )
+                                    
+                                    if let i = viewModel.images.firstIndex(where: { $0.hashValue == Int(imageId) }), i != viewModel.images.count - 1 {
+                                        viewModel.images.append(viewModel.images.remove(at: i))
+                                    }
                                 })
                                 .onEnded({ _ in viewModel.objectDraggingEnded(imageId) })
                         )
+                        .contextMenu {
+                            Button(role: .destructive) {
+                                viewModel.removeImage(id: imageId)
+                            } label: {
+                                Text("Remove")
+                            }
+                        }
                 }
             }
             .background(.windowBackground)

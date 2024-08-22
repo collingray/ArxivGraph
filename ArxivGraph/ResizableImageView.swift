@@ -19,15 +19,24 @@ struct ResizableImageView: View {
             .resizable()
             .aspectRatio(contentMode: .fit)
             .frame(width: imageSize.width, height: imageSize.height)
+            .cornerRadius(isHovered ? 0 : 8)
+            .shadow(radius: isHovered ? 0 : 4)
             .overlay(
                 GeometryReader { geometry in
                     if isHovered || dragOffset != .zero {
-                        ResizeHandles(
-                            geometry: geometry,
-                            dragOffset: $dragOffset,
-                            onDragChanged: handleDrag,
-                            onDragEnded: { _ in dragOffset = .zero }
-                        )
+                        ZStack {
+                            Rectangle()
+                                .border(Color.blue, width: 2)
+                                .foregroundColor(.clear)
+                                .padding(-1)
+
+                            ResizeHandles(
+                                geometry: geometry,
+                                dragOffset: $dragOffset,
+                                onDragChanged: handleDrag,
+                                onDragEnded: { _ in dragOffset = .zero }
+                            )
+                        }
                     }
                 }
             )

@@ -85,6 +85,10 @@ class GraphViewModel: ObservableObject {
         return false
     }
     
+    func removeImage(id: String) {
+        images.removeAll { $0.hashValue == Int(id) }
+    }
+    
     func positionOf(id: String) -> CGPoint {
         let position = (objectPositions[id] ?? .zero) + canvasPosition
         
