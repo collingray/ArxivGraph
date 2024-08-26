@@ -1,32 +1,46 @@
 import SwiftUI
+import SwiftData
 
 struct SidebarView: View {
-    @ObservedObject var viewModel: GraphViewModel
+    @Environment(\.modelContext) private var modelContext
+    @State private var manager: ModelManager?
+
+    @Query private var papers: [CanvasPaper]
     
-    @State var showAddPaperSheet = false
+    @State var searchText: String = ""
+    
+    @Binding var showAddPaperSheet: Bool
+    @Binding var canvasPosition: CGPoint
     
     var body: some View {
         List {
             Section {
-                ForEach(viewModel.papers.filter { paper in
-                    viewModel.searchText.isEmpty || paper.title.lowercased().contains(viewModel.searchText.lowercased())
+                ForEach(papers.filter { paper in
+                    searchText.isEmpty || paper.paper.title.lowercased().contains(searchText.lowercased())
                 }) { paper in
-                    Text(paper.title)
+                    Text(paper.paper.title)
                         .padding(3)
                         .onTapGesture(count: 2) {
-                            PDFUtils.fetchPaper(paper) { url in
+                            PDFUtils.fetchPaper(paper.paper) { url in
                                 if let url = url {
                                     NSWorkspace.shared.open(url)
                                 }
                             }
                         }
                         .onTapGesture(count: 1) {
-                            viewModel.centerOn(id: paper.id)
+                            canvasPosition = paper.position
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button(role: .destructive) {
+                                manager?.removePaper(id: paper.id)
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
                         }
                 }
             } header: {
                 HStack {
-                    TextField("Search local papers", text: $viewModel.searchText)
+                    TextField("Search local papers", text: $searchText)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                     
                     Button {
@@ -53,12 +67,14 @@ struct SidebarView: View {
             }.collapsible(false)
         }
         .listStyle(.inset)
-        .sheet(isPresented: $showAddPaperSheet) {
-            AddPaperSheetView(viewModel: viewModel, isDisplayed: $showAddPaperSheet)
+        .onAppear {
+            manager = ModelManager(modelContext: modelContext)
         }
     }
 }
 
 #Preview {
-    SidebarView(viewModel: PreviewData.graphViewModel)
+    SidebarView(showAddPaperSheet: .constant(false), canvasPosition: .constant(.zero))
+        .frame(width: 300, height: 600)
+        .injectPreviewData()
 }

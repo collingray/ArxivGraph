@@ -50,9 +50,7 @@ struct PDFUtils {
                         allText.append(pageText)
                     }
                 }
-                
-                print(allText)
-                
+                                
                 completion(allText)
             } else {
                 completion(nil)
@@ -71,6 +69,53 @@ struct PDFUtils {
                 completion(matches)
             } else {
                 completion(nil)
+            }
+        }
+    }
+    
+    static func openPaper(_ paper: ArxivPaper) {
+        PDFUtils.fetchPaper(paper) { url in
+            if let url = url {
+                NSWorkspace.shared.open(url)
+            }
+        }
+    }
+    
+    static func printPaper(_ paper: ArxivPaper) {
+        Task {
+            do {
+                // Load the PDF document on a background thread
+                let pdfDocument = try await Task.detached(priority: .userInitiated) {
+                    guard let document = PDFDocument(url: paper.pdfUrl) else {
+                        throw NSError(domain: "PDFPrinterError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to create PDF document from URL"])
+                    }
+                    return document
+                }.value
+                
+                // Switch to the main thread for UI operations
+                await MainActor.run {
+                    // Create a print info object
+                    let printInfo = NSPrintInfo.shared
+                    printInfo.topMargin = 0.0
+                    printInfo.leftMargin = 0.0
+                    printInfo.rightMargin = 0.0
+                    printInfo.bottomMargin = 0.0
+                    
+                    // Create a print operation
+                    guard let printOperation = pdfDocument.printOperation(for: printInfo, scalingMode: .pageScaleToFit, autoRotate: true) else {
+                        print("Failed to create print operation")
+                        return
+                    }
+                    
+                    // Set up the print operation
+                    printOperation.showsPrintPanel = true
+                    printOperation.showsProgressPanel = true
+                    
+                    // Run the print operation
+                    printOperation.run()
+                }
+            } catch {
+                print("Error opening print dialog: \(error.localizedDescription)")
             }
         }
     }

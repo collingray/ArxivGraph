@@ -8,7 +8,7 @@ class ArxivAPIClient {
     static let shared = ArxivAPIClient()
     private let baseURL = "http://export.arxiv.org/api/query"
     
-    func fetchPapers(identifiers: [String]) -> AnyPublisher<[ArxivPaper], Error> {
+    func fetchPapersPub(identifiers: [String]) -> AnyPublisher<[ArxivPaper], Error> {
         let urlString = "\(baseURL)?id_list=\(identifiers.joined(separator: ","))"
 
         guard let url = URL(string: urlString) else {
@@ -32,16 +32,27 @@ class ArxivAPIClient {
                         abstract: entry.summary,
                         authors: entry.authors,
                         date: ISO8601DateFormatter().date(from: entry.published) ?? Date(),
-                        pdfUrl: URL(string: entry.pdfLink)!,
-                        citations: []
+                        pdfUrl: URL(string: entry.pdfLink)!
                     )
                 }
             }
             .eraseToAnyPublisher()
     }
     
-    func fetchPaper(identifier: String) -> AnyPublisher<ArxivPaper, Error> {
-        return fetchPapers(identifiers: [identifier])
+    func fetchPapers(identifiers: [String]) async throws -> [ArxivPaper] {
+        let papers = try await fetchPapersPub(identifiers: identifiers).values.first { (_: [ArxivPaper]) in
+            true
+        }
+        
+        if let papers = papers {
+            return papers
+        } else {
+            throw URLError(.cannotParseResponse)
+        }
+    }
+    
+    func fetchPaperPub(identifier: String) -> AnyPublisher<ArxivPaper, Error> {
+        return fetchPapersPub(identifiers: [identifier])
             .tryMap { entries in
                 guard let entry = entries.first else {
                     throw URLError(.cannotParseResponse)
@@ -52,8 +63,22 @@ class ArxivAPIClient {
             .eraseToAnyPublisher()
     }
     
+    func fetchPaper(identifier: String) async throws -> ArxivPaper {
+        let paper = try await fetchPaperPub(identifier: identifier)
+            .values
+            .first { (_: ArxivPaper) in
+                true
+            }
+        
+        if let paper = paper {
+            print("got paper: \(paper.id)")
+            return paper
+        } else {
+            throw URLError(.cannotParseResponse)
+        }
+    }
     
-    func fetchCitations(for paper: ArxivPaper) -> AnyPublisher<[ArxivPaper], Error> {
+    func fetchCitationsPub(for paper: ArxivPaper) -> AnyPublisher<[ArxivPaper], Error> {
         return Future<[String]?, Error>() { promise in
             PDFUtils.fetchPaperCitations(paper) { citations in
                 promise(Result.success(citations))
@@ -65,8 +90,22 @@ class ArxivAPIClient {
                         
             return citations
         }.flatMap { citations in
-            return self.fetchPapers(identifiers: citations)
+            return self.fetchPapersPub(identifiers: citations)
         }.eraseToAnyPublisher()
+    }
+    
+    func fetchCitations(for paper: ArxivPaper) async throws -> [ArxivPaper] {
+        let citations = try await fetchCitationsPub(for: paper)
+            .values
+            .first { (_: [ArxivPaper]) in
+                true
+            }
+        
+        if let citations = citations {
+            return citations.filter({$0.id != paper.id})
+        } else {
+            throw URLError(.cannotParseResponse)
+        }
     }
 }
 

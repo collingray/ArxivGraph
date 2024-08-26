@@ -1,11 +1,13 @@
 import SwiftUI
 
 struct AddPaperSheetView: View {
-    @ObservedObject var viewModel: GraphViewModel
+    @Environment(\.modelContext) private var modelContext
+    @State private var manager: ModelManager?
     
     @Binding var isDisplayed: Bool
+    @Binding var canvasPosition: CGPoint
 
-    @State var searchText: String = ""
+    @State var idFieldText: String = ""
     @State var idError: Bool = false
 
     var body: some View {
@@ -13,10 +15,12 @@ struct AddPaperSheetView: View {
             VStack(alignment: .leading) {
                 Text("Enter URL or Identifier")
 
-                TextField(text: $searchText, prompt: Text("arXiv:XXXX.XXXXX")) {
+                TextField(text: $idFieldText, prompt: Text("arXiv:XXXX.XXXXX")) {
                     Text("Enter URL or ID")
                 }
-                .onSubmit(submitAction)
+                .onSubmit { Task {
+                    try await submitAction()
+                }}
                 .labelsHidden()
                 
                 Text(verbatim: """
@@ -43,11 +47,15 @@ struct AddPaperSheetView: View {
                         isDisplayed = false
                     }
                     
-                    Button("Add Paper", action: submitAction)
+                    Button("Add Paper", action: { Task {
+                        try await submitAction()
+                    }})
                         .buttonStyle(BorderedProminentButtonStyle())
-                        .disabled(searchText.isEmpty)
+                        .disabled(idFieldText.isEmpty)
                 }
             }.padding()
+        }.onAppear {
+            manager = ModelManager(modelContext: modelContext)
         }
     }
     
@@ -61,12 +69,12 @@ struct AddPaperSheetView: View {
         }
     }
     
-    func submitAction() {
-        if !searchText.isEmpty {
-            if let id = extractIdentifier(from: searchText) {
-                viewModel.addPaper(identifier: id)
-                idError = false
+    func submitAction() async throws {
+        if !idFieldText.isEmpty {
+            if let id = extractIdentifier(from: idFieldText) {
                 isDisplayed = false
+                try await manager?.addPaper(identifier: id, position: canvasPosition)
+                idError = false
             } else {
                 idError = true
             }
@@ -74,6 +82,6 @@ struct AddPaperSheetView: View {
     }
 }
 
-#Preview {
-    AddPaperSheetView(viewModel: GraphViewModel(), isDisplayed: Binding(get: { false }, set: { _ in () }))
-}
+//#Preview {
+//    AddPaperSheetView(isDisplayed: Binding(get: { false }, set: { _ in () }))
+//}

@@ -1,13 +1,20 @@
 import SwiftUI
 import PDFKit
+import SwiftData
 
 struct PaperNodeView: View {
-    let paper: ArxivPaper
+    let paper: CanvasPaper
     
-    @ObservedObject var viewModel: GraphViewModel
+    @Environment(\.modelContext) private var modelContext
+    
+    @State private var manager: ModelManager?
     
     @State private var showingPreview = false
     @State private var showingPopover = false
+    
+    @Binding var canvasPosition: CGPoint
+    
+    @Query private var papers: [CanvasPaper]
     
     var body: some View {
         VStack(alignment: .leading) {
@@ -30,7 +37,6 @@ struct PaperNodeView: View {
                 
                 Button {
                     showingPopover = true
-                    print("\(paper.citations.count)")
                 } label: {
                     Image(systemName: "text.quote")
                 }.popover(isPresented: $showingPopover) {
@@ -38,10 +44,12 @@ struct PaperNodeView: View {
                         VStack(alignment: .leading) {
                             ForEach(paper.citations) { citation in
                                 HStack {
-                                    let existing = viewModel.containsPaper(identifier: citation.id)
+                                    let existing = papers.contains(where: { $0.id == citation.id })
                                     
                                     Button {
-                                        viewModel.addPaper(identifier: citation.id)
+                                        Task {
+                                            try await manager?.addPaper(identifier: citation.id, position: canvasPosition)
+                                        }
                                     } label: {
                                         Image(systemName: existing ? "checkmark" : "plus")
                                             .frame(width: 15, height: 15)
@@ -58,16 +66,22 @@ struct PaperNodeView: View {
                     }.frame(minWidth: 350, maxWidth: 350, minHeight: 100, maxHeight: 250)
                 }.help("Show cited papers")
                 
+                Button {
+                    printPDF()
+                } label: {
+                    Image(systemName: "printer")
+                }.help("Print paper")
+                
                 Spacer()
                 
                 Button {
-                    viewModel.removePaper(identifier: paper.id)
+                    manager?.removePaper(id: paper.id)
                 } label: {
                     Image(systemName: "trash")
                 }.help("Delete paper")
             }.buttonStyle(BorderlessButtonStyle())
             
-            Text(paper.title)
+            Text(paper.paper.title)
                 .font(.headline)
             
             
@@ -78,16 +92,16 @@ struct PaperNodeView: View {
                 return formatter
             }()
             
-            let formattedDate = dateFormatter.string(from: paper.date)
+            let formattedDate = dateFormatter.string(from: paper.paper.date)
             
             Text("arXiv: \(paper.id)  •  \(formattedDate)")
                 .font(.subheadline)
             
-            Text(paper.authors.joined(separator: "  •  "))
+            Text(paper.paper.authors.joined(separator: "  •  "))
                 .font(.caption2)
                 .lineLimit(5)
             
-            Text(paper.abstract.replacingOccurrences(of: "\n", with: " "))
+            Text(paper.paper.abstract.replacingOccurrences(of: "\n", with: " "))
                 .font(.caption)
                 .lineLimit(15)
                 
@@ -100,17 +114,20 @@ struct PaperNodeView: View {
             openPDF()
         }
         .sheet(isPresented: $showingPreview) {
-            PDFPreviewView(title: paper.title, url: paper.pdfUrl, isShown: $showingPreview)
+            PDFPreviewView(title: paper.paper.title, url: paper.paper.pdfUrl, isShown: $showingPreview)
                 .frame(width: 600, height: 800)
+        }
+        .onAppear {
+            manager = ModelManager(modelContext: modelContext)
         }
     }
     
     func openPDF() {
-        PDFUtils.fetchPaper(paper) { url in
-            if let url = url {
-                NSWorkspace.shared.open(url)
-            }
-        }
+        PDFUtils.openPaper(paper.paper)
+    }
+    
+    func printPDF() {
+        PDFUtils.printPaper(paper.paper)
     }
 }
 
@@ -151,5 +168,6 @@ struct PDFViewer: NSViewRepresentable {
 }
 
 #Preview {
-    PaperNodeView(paper: PreviewData.paper4, viewModel: PreviewData.graphViewModel)
+    PaperNodeView(paper: PreviewData.samplePaper, canvasPosition: .constant(.zero))
+        .injectPreviewData()
 }
