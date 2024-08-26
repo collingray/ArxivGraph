@@ -2,7 +2,6 @@ import SwiftUI
 
 struct AddPaperSheetView: View {
     @Environment(\.modelContext) private var modelContext
-    @State private var manager: ModelManager?
     
     @Binding var isDisplayed: Bool
     @Binding var canvasPosition: CGPoint
@@ -54,8 +53,6 @@ struct AddPaperSheetView: View {
                         .disabled(idFieldText.isEmpty)
                 }
             }.padding()
-        }.onAppear {
-            manager = ModelManager(modelContext: modelContext)
         }
     }
     
@@ -73,8 +70,8 @@ struct AddPaperSheetView: View {
         if !idFieldText.isEmpty {
             if let id = extractIdentifier(from: idFieldText) {
                 isDisplayed = false
-                try await manager?.addPaper(identifier: id, position: canvasPosition)
                 idError = false
+                try await modelContext.addPaper(identifier: id, position: -canvasPosition)
             } else {
                 idError = true
             }

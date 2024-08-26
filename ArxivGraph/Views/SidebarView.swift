@@ -2,8 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct SidebarView: View {
-    @Environment(\.modelContext) private var modelContext
-    @State private var manager: ModelManager?
+    @Environment(\.modelContext) private var model
 
     @Query private var papers: [CanvasPaper]
     
@@ -28,53 +27,56 @@ struct SidebarView: View {
                             }
                         }
                         .onTapGesture(count: 1) {
-                            canvasPosition = paper.position
+                            canvasPosition = -paper.position
                         }
                         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                             Button(role: .destructive) {
-                                manager?.removePaper(id: paper.id)
+                                model.delete(paper)
                             } label: {
                                 Label("Delete", systemImage: "trash")
                             }
                         }
                 }
-            } header: {
-                HStack {
-                    TextField("Search local papers", text: $searchText)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                    
-                    Button {
-                        if let url = PDFUtils.documentDir {
-                            NSWorkspace.shared.open(url)
-                        }
-                    } label: {
-                        Image(systemName: "folder")
-                            .imageScale(.large)
-                    }
-                    .buttonStyle(BorderlessButtonStyle())
-                    .help("Open papers directory")
-                    
-                    Button {
-                        showAddPaperSheet = true
-                    } label: {
-                        Image(systemName: "plus")
-                            .imageScale(.large)
-                    }
-                    .buttonStyle(BorderlessButtonStyle())
-                    .help("Add a new paper")
-                }
-                .padding()
-            }.collapsible(false)
+            }
+            .collapsible(false)
         }
-        .listStyle(.inset)
-        .onAppear {
-            manager = ModelManager(modelContext: modelContext)
+        .safeAreaInset(edge: .top) {
+            HStack {
+                TextField("Search local papers", text: $searchText)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                
+                Button {
+                    if let url = PDFUtils.documentDir {
+                        NSWorkspace.shared.open(url)
+                    }
+                } label: {
+                    Image(systemName: "folder")
+                        .imageScale(.large)
+                }
+                .buttonStyle(BorderlessButtonStyle())
+                .help("Open papers directory")
+                
+                Button {
+                    showAddPaperSheet = true
+                } label: {
+                    Image(systemName: "plus")
+                        .imageScale(.large)
+                }
+                .buttonStyle(BorderlessButtonStyle())
+                .help("Add a new paper")
+            }.padding(.horizontal)
         }
     }
 }
 
 #Preview {
-    SidebarView(showAddPaperSheet: .constant(false), canvasPosition: .constant(.zero))
-        .frame(width: 300, height: 600)
-        .injectPreviewData()
+    NavigationSplitView {
+        SidebarView(showAddPaperSheet: .constant(false), canvasPosition: .constant(.zero))
+//            .frame(width: 300, height: 600)
+            .injectPreviewData()
+    } detail: {
+        Text("detail")
+    }.toolbar {
+        Text("aoeu")
+    }
 }

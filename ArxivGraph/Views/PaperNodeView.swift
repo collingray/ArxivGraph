@@ -6,9 +6,7 @@ struct PaperNodeView: View {
     let paper: CanvasPaper
     
     @Environment(\.modelContext) private var modelContext
-    
-    @State private var manager: ModelManager?
-    
+        
     @State private var showingPreview = false
     @State private var showingPopover = false
     
@@ -48,7 +46,7 @@ struct PaperNodeView: View {
                                     
                                     Button {
                                         Task {
-                                            try await manager?.addPaper(identifier: citation.id, position: canvasPosition)
+                                            try await modelContext.addPaper(identifier: citation.id, position: canvasPosition)
                                         }
                                     } label: {
                                         Image(systemName: existing ? "checkmark" : "plus")
@@ -73,9 +71,9 @@ struct PaperNodeView: View {
                 }.help("Print paper")
                 
                 Spacer()
-                
+                                
                 Button {
-                    manager?.removePaper(id: paper.id)
+                    modelContext.delete(paper)
                 } label: {
                     Image(systemName: "trash")
                 }.help("Delete paper")
@@ -116,9 +114,6 @@ struct PaperNodeView: View {
         .sheet(isPresented: $showingPreview) {
             PDFPreviewView(title: paper.paper.title, url: paper.paper.pdfUrl, isShown: $showingPreview)
                 .frame(width: 600, height: 800)
-        }
-        .onAppear {
-            manager = ModelManager(modelContext: modelContext)
         }
     }
     

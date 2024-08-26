@@ -8,10 +8,12 @@ struct ContentView: View {
     @State var canvasPosition: CGPoint = .zero
     
     var body: some View {
-        HSplitView {
+        NavigationSplitView {
             SidebarView(showAddPaperSheet: $showAddPaperSheet, canvasPosition: $canvasPosition)
                 .frame(minWidth: 100, maxWidth: 500)
                 
+            
+        } detail: {
             GraphView(canvasPosition: $canvasPosition)
                 .frame(minWidth: 500)
                 .onTapGesture(count: 2) {
@@ -26,4 +28,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
+        .injectPreviewData()
 }

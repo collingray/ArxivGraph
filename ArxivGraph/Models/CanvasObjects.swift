@@ -5,6 +5,7 @@ import AppKit
 protocol CanvasObject: Identifiable {
     var id: String { get }
     var position: CGPoint { get set }
+    var zIndex: Double { get set }
 }
 
 @Model
@@ -24,6 +25,7 @@ final class CanvasPaper: CanvasObject, Identifiable {
     }
     @Attribute private var x: Double
     @Attribute private var y: Double
+    @Attribute var zIndex: Double = 0
     
     init(_ paper: ArxivPaper, position: CGPoint) {
         self.id = paper.id
@@ -53,6 +55,7 @@ final class CanvasImage: CanvasObject, Identifiable {
     }
     @Attribute private var x: Double
     @Attribute private var y: Double
+    @Attribute var zIndex: Double = 0
     
     var image: NSImage? {
         get {

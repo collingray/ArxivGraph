@@ -2,9 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct GraphView: View {
-//    @Environment(GraphViewModel.self) private var viewModel
-    @Environment(\.modelContext) private var modelContext
-    @State private var manager: ModelManager?
+    @Environment(\.modelContext) private var model
     
     @Query private var papers: [CanvasPaper]
     @Query private var images: [CanvasImage]
@@ -15,6 +13,8 @@ struct GraphView: View {
     @State var draggingObjectId: String? = nil
     @State var dragOffset: CGPoint = CGPoint.zero
     
+    @State var maxZ: Double = 0.0
+    
     var body: some View {
         GeometryReader { geometry in
             let centerOffset = CGPoint(x: 0, y: (geometry.frame(in: .local).height / 2))
@@ -23,11 +23,6 @@ struct GraphView: View {
                 Color.clear
                 
                 ForEach(papers) { paper in
-                    
-//                    let citations = paper.paper.citations
-//                        .filter { paper in
-//                        !self.papers.contains(where: { $0.paper.id == paper.id })
-//                    }
                     let citedIds = Set(paper.citations.map { $0.id })
                     let citations = papers.filter { cited in
                         citedIds.contains(cited.paper.id)
@@ -49,17 +44,19 @@ struct GraphView: View {
                         .gesture(
                             DragGesture()
                                 .onChanged({ value in
-                                    draggingObject(paper.id, by: value.translation )
+                                    if paper.zIndex != maxZ {
+                                        maxZ += 1
+                                        paper.zIndex = maxZ
+                                    }
                                     
-//                                    if let i = papers.firstIndex(where: { $0.id == paper.id }), i != images.count - 1 {
-//                                        papers.append(papers.remove(at: i))
-//                                    }
+                                    draggingObject(paper, by: value.translation)
                                 })
                                 .onEnded({ _ in
-                                    manager?.movePaper(id: paper.id, newPosition: paper.position + dragOffset)
+                                    paper.position += dragOffset
                                     objectDraggingEnded()
                                 })
                         )
+                        .zIndex(paper.zIndex)
                         .frame(width: 300)
                 }
                 
@@ -70,24 +67,26 @@ struct GraphView: View {
                             .gesture(
                                 DragGesture()
                                     .onChanged({ value in
-                                        draggingObject(image.id, by: value.translation )
+                                        if image.zIndex != maxZ {
+                                            maxZ += 1
+                                            image.zIndex = maxZ
+                                        }
                                         
-//                                        if let i = viewModel.images.firstIndex(where: { $0.hashValue == Int(imageId) }), i != viewModel.images.count - 1 {
-//                                            viewModel.images.append(viewModel.images.remove(at: i))
-//                                        }
+                                        draggingObject(image, by: value.translation)
                                     })
                                     .onEnded({ _ in
-                                        manager?.movePaper(id: image.id, newPosition: image.position + dragOffset)
+                                        image.position += dragOffset
                                         objectDraggingEnded()
                                     })
                             )
                             .contextMenu {
                                 Button(role: .destructive) {
-                                    manager?.removeImage(id: image.id)
+                                    model.delete(image)
                                 } label: {
                                     Text("Remove")
                                 }
                             }
+                            .zIndex(image.zIndex)
                     }
                 }
             }
@@ -105,7 +104,7 @@ struct GraphView: View {
                 item.loadObject(ofClass: NSImage.self) { image, error in
                     if let image = image as? NSImage {
                         DispatchQueue.main.async {
-                            manager?.addImage(CanvasImage(image, position: location))
+                            model.insert(CanvasImage(image, position: location))
                         }
                     }
                 }
@@ -115,13 +114,11 @@ struct GraphView: View {
         }
         .frame(minWidth: 600, maxWidth: .infinity, minHeight: 400, maxHeight: .infinity)
         .onAppear {
-            manager = ModelManager(modelContext: modelContext)
+            maxZ = max(papers.map({$0.zIndex}).max() ?? 0.0, images.map({$0.zIndex}).max() ?? 0.0)
         }
     }
     
-    
     func positionOf(_ object: any CanvasObject) -> CGPoint {
-        
         let position = object.position + canvasPosition
         
         if draggingCanvas || draggingObjectId == object.id {
@@ -142,9 +139,9 @@ struct GraphView: View {
         draggingCanvas = false
     }
     
-    func draggingObject(_ id: String, by offset: CGSize) {
+    func draggingObject(_ object: any CanvasObject, by offset: CGSize) {
         dragOffset = CGPoint(x: offset.width, y: offset.height)
-        draggingObjectId = id
+        draggingObjectId = object.id
     }
     
     func objectDraggingEnded() {
@@ -173,8 +170,13 @@ extension CGPoint {
     static prefix func -(point: CGPoint) -> CGPoint {
         return CGPoint(x: -point.x, y: -point.y)
     }
+    
+    static func += (left: inout CGPoint, right: CGPoint) {
+        left = left + right
+    }
 }
 
-//#Preview {
-//    GraphView()
-//}
+#Preview {
+    GraphView(canvasPosition: .constant(.zero))
+        .injectPreviewData()
+}
