@@ -44,7 +44,11 @@ struct SidebarView: View {
             HStack {
                 TextField("Search local papers", text: $searchText)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
-                
+            }.padding(.horizontal)
+        }
+        .toolbar {
+            ToolbarItemGroup {
+                Spacer()
                 Button {
                     if let url = PDFUtils.documentDir {
                         NSWorkspace.shared.open(url)
@@ -64,7 +68,7 @@ struct SidebarView: View {
                 }
                 .buttonStyle(BorderlessButtonStyle())
                 .help("Add a new paper")
-            }.padding(.horizontal)
+            }
         }
     }
 }
@@ -72,11 +76,8 @@ struct SidebarView: View {
 #Preview {
     NavigationSplitView {
         SidebarView(showAddPaperSheet: .constant(false), canvasPosition: .constant(.zero))
-//            .frame(width: 300, height: 600)
             .injectPreviewData()
     } detail: {
         Text("detail")
-    }.toolbar {
-        Text("aoeu")
     }
 }

@@ -110,10 +110,6 @@ struct ResizeHandles: View {
             .fill(Color.blue)
             .frame(width: circleSize, height: circleSize)
             .position(position.point(in: geometry.size))
-//            .onHover { hovered in
-//                handleHovers[position] = hovered
-//            }
-//            .animation(.easeInOut(duration: 0.2), value: isExpanded)
     }
 }
 

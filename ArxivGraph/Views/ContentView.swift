@@ -11,8 +11,6 @@ struct ContentView: View {
         NavigationSplitView {
             SidebarView(showAddPaperSheet: $showAddPaperSheet, canvasPosition: $canvasPosition)
                 .frame(minWidth: 100, maxWidth: 500)
-                
-            
         } detail: {
             GraphView(canvasPosition: $canvasPosition)
                 .frame(minWidth: 500)
