@@ -62,7 +62,7 @@ struct PaperNodeView: View {
                             }
                         }.padding()
                     }.frame(minWidth: 350, maxWidth: 350, minHeight: 100, maxHeight: 250)
-                }.help("Show cited papers")
+                }.help("View references")
                 
                 Button {
                     printPDF()

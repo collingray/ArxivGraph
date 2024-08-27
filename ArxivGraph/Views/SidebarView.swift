@@ -57,7 +57,6 @@ struct SidebarView: View {
                     Image(systemName: "folder")
                         .imageScale(.large)
                 }
-                .buttonStyle(BorderlessButtonStyle())
                 .help("Open papers directory")
                 
                 Button {
@@ -66,7 +65,6 @@ struct SidebarView: View {
                     Image(systemName: "plus")
                         .imageScale(.large)
                 }
-                .buttonStyle(BorderlessButtonStyle())
                 .help("Add a new paper")
             }
         }
